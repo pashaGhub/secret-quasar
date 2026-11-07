@@ -1,0 +1,31 @@
+/* Hero shell for the quasar. Everything inside is absolutely positioned within .sq-hero, so the
+   whole thing scrolls away like any other section. Hero size drives the HUD scale via container units. */
+.sq-hero {
+  position: relative; width: 100%; height: 100svh; overflow: hidden; background: #000;
+  container-type: size;           /* cqw / cqh used by hud.css + title.css */
+  isolation: isolate;
+  outline: none;
+}
+.sq-hero:focus-visible { outline: 1px solid rgba(127, 230, 255, .6); outline-offset: -3px; }
+.sq-hero canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.sq-space { z-index: 0; }
+.sq-hud-dom { position: absolute; inset: 0; z-index: 1; }
+
+/* static fallback (no WebGL2 / context lost): the poster replaces the live canvas */
+.sq-poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; display: none; }
+.sq-hero[data-state='fallback'] .sq-poster { display: block; }
+.sq-hero[data-state='fallback'] canvas { display: none !important; }
+
+.sq-sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* cue: the hero is not the whole page. Sits in the clear space just above the HUD's button deck. */
+.sq-scroll { position: absolute; z-index: 2; left: 50%; bottom: calc(92px * var(--s, 1)); transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  font: 11px/1 'HUD Mono', ui-monospace, monospace; letter-spacing: .4em; padding-left: .4em; color: rgba(160, 240, 255, .9); text-decoration: none; text-shadow: 0 0 6px #000, 0 0 14px #000;
+  opacity: 0; animation: sq-cue 1s 1s ease forwards; pointer-events: auto; }
+.sq-scroll:hover { color: #fff; }
+.sq-scroll::after { content: ''; width: 1px; height: 24px; background: linear-gradient(rgba(127, 230, 255, .8), transparent); animation: sq-drip 1.8s ease-in-out infinite; }
+@keyframes sq-cue { to { opacity: 1; } }
+@keyframes sq-drip { 0% { transform: scaleY(0); transform-origin: top; } 50% { transform: scaleY(1); transform-origin: top; } 51% { transform-origin: bottom; } 100% { transform: scaleY(0); transform-origin: bottom; } }
+@media (max-aspect-ratio: 1/1) { .sq-scroll { display: none; } }
+@media (prefers-reduced-motion: reduce) { .sq-scroll, .sq-scroll::after { animation: none; opacity: 1; } }

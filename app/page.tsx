@@ -1,69 +1,55 @@
-import Image from "next/image";
+import QuasarHero from "@/components/QuasarHero";
+
+// Everything below the hero is placeholder content — replace it with your own sections.
+const features = [
+  {
+    title: "Live, not a video",
+    body: "The black hole is ray-marched on your GPU every frame — nothing is pre-rendered.",
+    accent: "text-neon-cyan",
+  },
+  {
+    title: "Segmented energy rings",
+    body: "Seven counter-rotating neon rings on a 30° tilted disk, with pulses racing along them.",
+    accent: "text-neon-pink",
+  },
+  {
+    title: "Laser jets",
+    body: "Twin beams on the same tilted axis, with charge pulses, sparks and arcade-style bursts.",
+    accent: "text-neon-orange",
+  },
+];
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <main>
+      <QuasarHero scrollTo="#content" />
+
+      <section id="content" className="mx-auto w-full max-w-6xl px-6 py-24 sm:py-32">
+        <p className="font-mono text-xs tracking-[0.4em] text-neon-cyan/80">ABOUT THE PROJECT</p>
+        <h2 className="mt-4 max-w-3xl font-display text-3xl font-bold leading-tight sm:text-5xl">
+          A secret hiding in plain sight.
+        </h2>
+        <p className="mt-6 max-w-2xl text-lg leading-8 text-foreground/70">
+          Placeholder copy — this is the rest of your page. The hero above scrolls away like any other
+          section, and the quasar stops rendering as soon as it leaves the screen.
+        </p>
+
+        <div className="mt-16 grid gap-6 sm:grid-cols-3">
+          {features.map((f) => (
+            <article
+              key={f.title}
+              className="rounded-sm border border-white/10 bg-white/[0.03] p-6 transition-colors hover:border-neon-cyan/50"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+              <h3 className={`font-display text-lg font-semibold tracking-wide ${f.accent}`}>{f.title}</h3>
+              <p className="mt-3 leading-7 text-foreground/65">{f.body}</p>
+            </article>
+          ))}
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+      </section>
+
+      <footer className="border-t border-white/10 px-6 py-10 text-center font-mono text-xs tracking-[0.3em] text-foreground/40">
+        SECRET QUASAR
+      </footer>
+    </main>
   );
 }

@@ -1,0 +1,25 @@
+/* Story Mode scene shell. The canvas fills .sm-scene; the scene fades in once the model is loaded. */
+.sm-scene {
+  position: relative; width: 100%; height: 100%; overflow: hidden;
+  background: radial-gradient(120% 90% at 50% 45%, #1a1420 0%, #0d0b12 60%, #07060a 100%);
+  isolation: isolate; outline: none; container-type: inline-size;
+}
+.sm-scene:focus-visible { outline: 1px solid rgba(255, 190, 120, .55); outline-offset: -3px; }
+.sm-stage, .sm-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.sm-canvas { opacity: 0; transition: opacity .9s ease; }
+.sm-scene[data-state='live'] .sm-canvas { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .sm-canvas { transition: none; } }
+
+/* static fallback (no WebGL2 / context lost) */
+.sm-poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: none; }
+.sm-scene[data-state='fallback'] .sm-poster { display: block; }
+.sm-scene[data-state='fallback'] .sm-canvas { display: none; }
+
+/* OSRS-style overhead text (hook for voiced dialogue). Positioned per frame from the head anchor. */
+.sm-overhead { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 2; }
+.sm-overhead-text {
+  position: absolute; left: 0; top: 0; max-width: 18em; text-align: center; white-space: pre-line;
+  font: 700 clamp(11px, 1.6cqw, 15px)/1.15 ui-sans-serif, system-ui, sans-serif; letter-spacing: .01em;
+  color: #ffff00; text-shadow: 1px 1px 0 #000, 0 0 3px rgba(0, 0, 0, .6);
+  will-change: transform;
+}
