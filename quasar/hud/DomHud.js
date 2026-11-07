@@ -75,12 +75,12 @@ export function mountDomHud(root, { params, telemetry, dispatch }) {
   const deck = el('div', 'deck');
   const rot = el('div', 'dial-group');
   rot.append(dial('rotDial', 'ROTATION'), el('div', 'steps'));
-  rot.lastChild.append(button('rotDown'), button('rotUp'));
+  rot.lastChild.append(button('rotUp'), button('rotDown'));
   const center = el('div', 'deck-center');
   center.append(button('btnPlay'), button('btnRestart'), button('btnMode'), button('btnHud'));
   const jet = el('div', 'dial-group');
   jet.append(el('div', 'steps'), dial('jetDial', 'JET POWER'));
-  jet.firstChild.append(button('jetDown'), button('jetUp'));
+  jet.firstChild.append(button('jetUp'), button('jetDown'));
   deck.append(rot, center, jet);
 
   root.append(frame, top, middle, deck);

@@ -1,17 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import StoryModeScene from "./StoryModeScene";
+import type { Creator } from "@/projects/story-mode/creators";
+import StoryModeCopy from "./StoryModeCopy";
+import StoryModeViewer from "./StoryModeViewer";
+import StoryModeCreatorsEditor from "./StoryModeCreatorsEditor";
+import "./story-mode-section.css";
 
 // Frame presets: the scene is judged in the size it will actually have on the page.
 const FRAMES = {
-  desktop: { label: "Desktop (scene column + text)", scene: "w-[58%] aspect-[1.3/1]", text: true },
-  mobile: { label: "Mobile (390 wide)", scene: "w-[390px] aspect-[1/1.05]", text: false },
-  full: { label: "Full window", scene: "w-full h-[calc(100svh-3rem)]", text: false },
+  desktop: { label: "Desktop (scene + copy)", width: "w-[58%]", frame: "relative aspect-[1.3/1]", text: true },
+  mobile: { label: "Mobile (390 wide)", width: "w-[390px]", frame: "relative aspect-[1/1.05]", text: false },
+  full: { label: "Full window", width: "w-full", frame: "relative h-[calc(100svh-7rem)]", text: false },
 } as const;
 type Frame = keyof typeof FRAMES;
 
-export default function StoryModeLab() {
+export default function StoryModeLab({ creators }: { creators: Creator[] }) {
   const [frame, setFrame] = useState<Frame>("desktop");
   const f = FRAMES[frame];
   return (
@@ -27,23 +31,16 @@ export default function StoryModeLab() {
             {FRAMES[k].label}
           </button>
         ))}
+        <a href="#creators-editor" className="ml-auto rounded-sm border border-white/15 px-2 py-1 text-white/60 hover:text-white">
+          Creators editor ↓
+        </a>
       </nav>
-      <div className={`mx-auto flex items-center gap-10 ${frame === "mobile" ? "justify-center py-8" : "px-6 py-8"} ${frame === "full" ? "p-0 py-0 px-0" : ""}`}>
-        <div className={`relative shrink-0 ${f.scene}`}>
-          <StoryModeScene lab />
-        </div>
-        {f.text && (
-          <div className="max-w-md opacity-60">
-            <p className="font-mono text-xs tracking-[0.3em] text-[#ffb46e]">RUNELITE PLUGIN · TEXT-TO-SPEECH</p>
-            <h2 className="mt-3 font-serif text-5xl">Story Mode</h2>
-            <p className="mt-5 leading-7">
-              Quests deserve better than a monotone reader. Story Mode gives every NPC a real voice — with
-              emotion, pacing and personality.
-            </p>
-            <p className="mt-6 text-xs text-white/40">(text column placeholder — Phase 5)</p>
-          </div>
-        )}
+      {/* the copy column is a size container (title sized in cqi), so it needs an explicit flex size */}
+      <div className={`sm-section mx-auto flex items-center gap-10 [&>.sm-copy]:min-w-0 [&>.sm-copy]:flex-1 ${frame === "mobile" ? "justify-center py-8" : "px-6 py-8"} ${frame === "full" ? "p-0 py-0 px-0" : ""}`}>
+        <StoryModeViewer lab className={`shrink-0 ${f.width}`} frameClassName={f.frame} />
+        {f.text && <StoryModeCopy />}
       </div>
+      <StoryModeCreatorsEditor initial={creators} />
     </main>
   );
 }

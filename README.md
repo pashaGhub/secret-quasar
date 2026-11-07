@@ -7,10 +7,23 @@ section.
 ```bash
 npm install
 npm run dev      # http://localhost:3000
-npm run build && npm start
+npm run build    # static export → out/   (preview it: npx serve out)
 ```
 
-Deploy on Vercel as-is (no config needed).
+The site is a fully static export, deployed on **Cloudflare Pages** (connected to Git):
+
+| Setting | Value |
+| --- | --- |
+| Framework preset | None (or Next.js *static export*) |
+| Build command | `npm run build` |
+| Build output directory | `out` |
+| Node version | 20 or newer (`NODE_VERSION` env var) |
+| Env var (production) | `NEXT_PUBLIC_SITE_URL` = your live URL, e.g. `https://example.com` |
+
+`public/_headers` sets the cache and security headers. The Story Mode lab (`/lab/story-mode`) and its
+creators editor are dev-only: their files are `*.dev.tsx` / `*.dev.ts`, which Next only routes under
+`npm run dev`, so they are not in the production build. Edit creators in the lab, then commit
+`projects/story-mode/creators.json`.
 
 ## How it is wired
 

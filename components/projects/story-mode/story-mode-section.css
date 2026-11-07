@@ -1,0 +1,284 @@
+/* Story Mode section: candlelit, ancient — deliberately not the neon style of the hero. */
+@font-face {
+  font-family: "Story Display";
+  src: url("/projects/story-mode/fonts/Cinzel-Variable.woff2") format("woff2");
+  font-weight: 400 900;
+  font-display: swap;
+}
+
+.sm-section {
+  --sm-open: 2.2s;                 /* book opening time; set from the engine when it starts */
+  --sm-close: 1.3s;                /* book closing time; likewise */
+  --sm-ink: #e8dcc8;
+  --sm-amber: #ffab5e;
+  position: relative;
+  overflow: hidden;
+  background: #07060a;
+  color: var(--sm-ink);
+}
+.sm-section-bg {
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(55% 45% at 30% 52%, rgba(255, 150, 70, 0.07), transparent 70%),
+    radial-gradient(40% 40% at 80% 40%, rgba(111, 155, 255, 0.035), transparent 70%),
+    linear-gradient(to bottom, #000 0%, #07060a 14%, #07060a 86%, #000 100%);
+}
+.sm-section-grid {
+  position: relative;
+  display: grid;
+  gap: 2.5rem;
+  align-items: center;
+  width: 100%;
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 6rem 1.5rem;
+}
+@media (min-width: 64rem) {
+  .sm-section-grid { grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 3.5rem; padding-block: 8rem; }
+}
+
+/* scene + controls bar */
+.sm-viewer { display: flex; flex-direction: column; gap: 0.75rem; min-width: 0; }
+
+/* scene frame: edges dissolve into the page instead of a hard box */
+.sm-frame { position: relative; width: 100%; aspect-ratio: 1 / 1.05; }
+@media (min-width: 40rem) { .sm-frame { aspect-ratio: 1.3 / 1; } }
+.sm-frame .sm-scene {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 11%, #000 89%, transparent), linear-gradient(to bottom, transparent, #000 10%, #000 88%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to right, transparent, #000 11%, #000 89%, transparent), linear-gradient(to bottom, transparent, #000 10%, #000 88%, transparent);
+  mask-composite: intersect;
+}
+.sm-frame .sm-scene:focus-visible { outline: none; }
+.sm-frame:has(.sm-scene:focus-visible) { outline: 1px solid rgba(255, 190, 120, 0.55); outline-offset: 4px; border-radius: 2px; }
+
+/* ── copy ─────────────────────────────────────────────────────────────── */
+.sm-copy { max-width: 32rem; container-type: inline-size; }
+.sm-kicker {
+  font: 600 0.72rem/1 "Story Display", ui-serif, Georgia, serif;
+  letter-spacing: 0.32em; text-transform: uppercase; color: var(--sm-amber); opacity: 0.85;
+}
+.sm-title {
+  margin-top: 1rem;
+  font-family: "Story Display", ui-serif, Georgia, serif;
+  font-weight: 700;
+  /* sized to the copy column, not the viewport: the title is ~6.7em wide, so 14cqi fills ~94% of
+     the column at any screen width. nowrap keeps the letters (separate inline-blocks) on one line. */
+  font-size: clamp(2.4rem, 14cqi, 4.75rem);
+  line-height: 1;
+  letter-spacing: 0.015em;
+  white-space: nowrap;
+}
+
+/* each letter: gold → amber gradient with a dark OSRS-style drop shadow and a faint warm glow.
+   Every state uses the same filter function list so they interpolate. */
+.sm-l {
+  display: inline-block;
+  background: linear-gradient(180deg, #fff3cc 0%, #ffd27a 36%, #ff9a3c 74%, #b84f18 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: brightness(1) saturate(1) drop-shadow(0 3px 0 #140904) drop-shadow(0 0 8px rgba(255, 140, 50, 0.22));
+}
+.sm-sp { display: inline-block; width: 0.3em; }
+
+/* unlit while the book is closed (only once the scene is actually running) */
+.sm-section:has(.sm-scene[data-book="closed"]) .sm-l {
+  filter: brightness(0.24) saturate(0.25) drop-shadow(0 3px 0 #000) drop-shadow(0 0 0 rgba(255, 140, 50, 0));
+}
+/* ignites letter by letter each time the cover swings open (the animation restarts because the
+   closed state has none) */
+.sm-section:has(.sm-scene[data-book="opening"]) .sm-l,
+.sm-section:has(.sm-scene[data-book="open"]) .sm-l {
+  animation: sm-ignite calc(var(--sm-open) * 0.5) cubic-bezier(0.3, 0.7, 0.3, 1) both;
+  animation-delay: calc(var(--i) * var(--sm-open) * 0.045);
+}
+/* gutters out, last letter first, as the cover swings shut */
+.sm-section:has(.sm-scene[data-book="closing"]) .sm-l {
+  animation: sm-douse calc(var(--sm-close) * 0.6) ease-in both;
+  animation-delay: calc((9 - var(--i)) * var(--sm-close) * 0.04);
+}
+@keyframes sm-douse {
+  0%   { filter: brightness(1) saturate(1) drop-shadow(0 3px 0 #140904) drop-shadow(0 0 8px rgba(255, 140, 50, 0.22)); }
+  25%  { filter: brightness(1.5) saturate(1.1) drop-shadow(0 3px 0 #140904) drop-shadow(0 0 12px rgba(255, 150, 60, 0.5)); }
+  100% { filter: brightness(0.24) saturate(0.25) drop-shadow(0 3px 0 #000) drop-shadow(0 0 0 rgba(255, 140, 50, 0)); }
+}
+@keyframes sm-ignite {
+  0%   { filter: brightness(0.24) saturate(0.25) drop-shadow(0 3px 0 #000) drop-shadow(0 0 0 rgba(255, 140, 50, 0)); }
+  30%  { filter: brightness(2.3) saturate(1.25) drop-shadow(0 3px 0 #140904) drop-shadow(0 0 16px rgba(255, 150, 60, 0.95)); }
+  100% { filter: brightness(1) saturate(1) drop-shadow(0 3px 0 #140904) drop-shadow(0 0 8px rgba(255, 140, 50, 0.22)); }
+}
+
+/* subtitle: fades up and flares once the title letters have caught (fixed spacing: no reflow) */
+.sm-subtitle {
+  margin-top: 0.85rem;
+  font: 600 clamp(0.78rem, 3.4cqi, 0.98rem)/1.3 "Story Display", ui-serif, Georgia, serif;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: #ffd9a0; text-shadow: 0 2px 0 #140904, 0 0 12px rgba(255, 150, 60, 0.28);
+}
+.sm-section:has(.sm-scene[data-book="closed"]) .sm-subtitle { opacity: 0.18; filter: blur(1.5px); }
+.sm-section:has(.sm-scene[data-book="opening"]) .sm-subtitle,
+.sm-section:has(.sm-scene[data-book="open"]) .sm-subtitle {
+  animation: sm-sub-in calc(var(--sm-open) * 0.5) cubic-bezier(0.25, 0.8, 0.3, 1) both;
+  animation-delay: calc(var(--n) * var(--sm-open) * 0.045);
+}
+.sm-section:has(.sm-scene[data-book="closing"]) .sm-subtitle { animation: sm-sub-out calc(var(--sm-close) * 0.45) ease-in both; }
+@keyframes sm-sub-in {
+  0%   { opacity: 0.18; filter: blur(1.5px); transform: translateY(4px); text-shadow: 0 2px 0 #140904, 0 0 0 rgba(255, 150, 60, 0); }
+  45%  { opacity: 1; filter: blur(0); transform: none; text-shadow: 0 2px 0 #140904, 0 0 18px rgba(255, 160, 70, 0.85); }
+  100% { opacity: 1; filter: blur(0); transform: none; text-shadow: 0 2px 0 #140904, 0 0 12px rgba(255, 150, 60, 0.28); }
+}
+@keyframes sm-sub-out {
+  0%   { opacity: 1; filter: blur(0); }
+  100% { opacity: 0.18; filter: blur(1.5px); }
+}
+
+/* rune divider draws out from the centre gem */
+.sm-divider { display: block; width: min(15rem, 70%); height: auto; margin-top: 1.25rem; overflow: visible; }
+.sm-divider-line {
+  fill: none; stroke: #c98a4a; stroke-width: 1.2; stroke-linecap: round; opacity: 0.7;
+  stroke-dasharray: 1; stroke-dashoffset: 0;
+  transition: stroke-dashoffset calc(var(--sm-open) * 0.55) cubic-bezier(0.5, 0, 0.2, 1) calc(var(--sm-open) * 0.4);
+}
+.sm-divider-gem {
+  fill: none; stroke: #ffc27a; stroke-width: 1.2;
+  filter: drop-shadow(0 0 3px rgba(255, 150, 60, 0.7));
+  transition: opacity calc(var(--sm-open) * 0.3) ease calc(var(--sm-open) * 0.25);
+}
+circle.sm-divider-gem { fill: #ffd9a0; stroke: none; }
+.sm-section:has(.sm-scene[data-book="closed"]) .sm-divider-line { stroke-dashoffset: 1; }
+.sm-section:has(.sm-scene[data-book="closed"]) .sm-divider-gem { opacity: 0.25; }
+.sm-section:has(.sm-scene[data-book="closing"]) .sm-divider-line {
+  stroke-dashoffset: 1; transition-duration: calc(var(--sm-close) * 0.6); transition-delay: 0s;
+}
+.sm-section:has(.sm-scene[data-book="closing"]) .sm-divider-gem { opacity: 0.25; transition-delay: calc(var(--sm-close) * 0.4); }
+
+.sm-lede { margin-top: 1.75rem; font-size: 1.075rem; line-height: 1.8; color: rgba(232, 220, 200, 0.78); }
+
+.sm-points { margin-top: 2rem; display: grid; gap: 1.25rem; }
+.sm-points li { display: grid; grid-template-columns: 0.8rem 1fr; gap: 0.9rem; align-items: start; }
+.sm-bullet { width: 0.8rem; height: 0.8rem; margin-top: 0.3rem; }
+.sm-bullet path { fill: #2a1a0e; stroke: #ffab5e; stroke-width: 1.2; filter: drop-shadow(0 0 3px rgba(255, 150, 60, 0.6)); }
+.sm-points h3 {
+  font: 600 1rem/1.35 "Story Display", ui-serif, Georgia, serif;
+  letter-spacing: 0.04em; color: #ffd9a0;
+}
+.sm-points p { margin-top: 0.3rem; line-height: 1.7; color: rgba(232, 220, 200, 0.66); }
+
+/* ── buttons (Read more, Open / Close the book): carved-stone plate, amber trim ── */
+.sm-btn {
+  position: relative; display: inline-flex; align-items: center; gap: 0.65rem;
+  font: 700 0.74rem/1 "Story Display", ui-serif, Georgia, serif;
+  letter-spacing: 0.22em; text-transform: uppercase; color: #ffd9a0;
+  background: linear-gradient(180deg, #2b1c10 0%, #1a110a 55%, #120b07 100%);
+  border: 1px solid rgba(255, 171, 94, 0.5);
+  border-radius: 2px;
+  box-shadow: inset 0 1px 0 rgba(255, 220, 160, 0.14), inset 0 0 0 3px #0c0805, inset 0 0 0 4px rgba(255, 171, 94, 0.14),
+    0 2px 0 #000, 0 0 18px -8px rgba(255, 150, 60, 0.55);
+  text-shadow: 0 1px 0 #000;
+  cursor: pointer; text-decoration: none; white-space: nowrap;
+  transition: color 0.25s, border-color 0.25s, box-shadow 0.3s, background 0.3s, opacity 0.25s;
+}
+.sm-btn-sm { padding: 0.62rem 0.95rem; font-size: 0.68rem; }
+.sm-btn-lg { padding: 0.95rem 1.4rem; }
+.sm-btn:hover:not(:disabled) {
+  color: #fff3cc; border-color: rgba(255, 190, 120, 0.9);
+  background: linear-gradient(180deg, #3a2513 0%, #22150b 55%, #160d07 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 220, 160, 0.22), inset 0 0 0 3px #0c0805, inset 0 0 0 4px rgba(255, 171, 94, 0.3),
+    0 2px 0 #000, 0 0 26px -6px rgba(255, 150, 60, 0.8);
+}
+.sm-btn:active:not(:disabled) { transform: translateY(1px); }
+.sm-btn:focus-visible { outline: 1px solid #ffc27a; outline-offset: 3px; }
+.sm-btn:disabled { opacity: 0.45; cursor: default; }
+.sm-btn-gem { width: 0.6rem; height: 0.6rem; flex: none; }
+.sm-btn-gem path { fill: #2a1a0e; stroke: #ffab5e; stroke-width: 1.3; transition: fill 0.25s; }
+.sm-btn:hover:not(:disabled) .sm-btn-gem path { fill: #ffab5e; }
+.sm-btn-arrow { width: 1.1rem; height: 0.7rem; flex: none; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; transition: transform 0.3s cubic-bezier(0.3, 0.7, 0.3, 1); }
+.sm-btn:hover .sm-btn-arrow { transform: translateX(3px); }
+.sm-readmore { margin-top: 2.5rem; }
+
+/* ── controls bar under the scene ── */
+.sm-controls {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 0.75rem 1.5rem;
+  padding-inline: 6%;
+}
+/* button first, hint beside it; on narrow screens the hint wraps under the button, left-aligned */
+.sm-controls .sm-btn { flex: none; }
+.sm-controls .sm-hint { flex: 0 1 auto; }
+.sm-hint {
+  display: flex; align-items: center; gap: 0.6rem;
+  font-size: 0.78rem; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(232, 220, 200, 0.42);
+}
+.sm-hint-dot {
+  flex: none; width: 6px; height: 6px; border-radius: 50%; background: #ffab5e;
+  box-shadow: 0 0 8px 2px rgba(255, 150, 60, 0.6);
+  animation: sm-ember 2.4s ease-in-out infinite;
+}
+.sm-hint-touch { display: none; }
+@media (hover: none) { .sm-hint-pointer { display: none; } .sm-hint-touch { display: inline; } }
+@media (max-width: 30rem) {
+  .sm-controls { padding-inline: 2%; gap: 0.75rem 1rem; }
+  .sm-hint { font-size: 0.7rem; letter-spacing: 0.07em; line-height: 1.45; }
+}
+@keyframes sm-ember { 50% { opacity: 0.35; box-shadow: 0 0 4px 1px rgba(255, 150, 60, 0.35); } }
+
+/* ── creators & contributors ── */
+.sm-creators {
+  grid-column: 1 / -1;
+  margin-top: 1.5rem; padding-top: 3rem;
+  border-top: 1px solid transparent;
+  border-image: linear-gradient(to right, transparent, rgba(201, 138, 74, 0.45), transparent) 1;
+  text-align: center;
+}
+.sm-creators-title {
+  margin-top: 0.75rem;
+  font: 700 clamp(1.5rem, 3vw, 2rem)/1.1 "Story Display", ui-serif, Georgia, serif;
+  letter-spacing: 0.03em; color: #ffd9a0; text-shadow: 0 2px 0 #140904, 0 0 14px rgba(255, 150, 60, 0.2);
+}
+.sm-creators-list {
+  margin-top: 2rem;
+  display: grid; gap: 0.85rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 17rem));
+  justify-content: center;
+}
+.sm-creator {
+  display: flex; align-items: center; gap: 0.85rem; height: 100%;
+  padding: 0.8rem 1rem; text-align: left; text-decoration: none; color: inherit;
+  background: linear-gradient(180deg, rgba(255, 171, 94, 0.05), rgba(255, 171, 94, 0.015));
+  border: 1px solid rgba(255, 171, 94, 0.16); border-radius: 3px;
+  transition: border-color 0.25s, background 0.25s, box-shadow 0.3s, transform 0.3s cubic-bezier(0.3, 0.7, 0.3, 1);
+}
+a.sm-creator:hover {
+  border-color: rgba(255, 171, 94, 0.55);
+  background: linear-gradient(180deg, rgba(255, 171, 94, 0.1), rgba(255, 171, 94, 0.03));
+  box-shadow: 0 0 24px -10px rgba(255, 150, 60, 0.7);
+  transform: translateY(-2px);
+}
+a.sm-creator:focus-visible { outline: 1px solid #ffc27a; outline-offset: 3px; }
+.sm-avatar {
+  position: relative; flex: none; width: 2.75rem; height: 2.75rem; border-radius: 50%; overflow: hidden;
+  background: radial-gradient(circle at 50% 35%, #3a2513, #140c06);
+  box-shadow: 0 0 0 1px rgba(255, 171, 94, 0.6), 0 0 0 3px #0c0805, 0 0 0 4px rgba(255, 171, 94, 0.18);
+}
+.sm-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sm-avatar-initials {
+  display: grid; place-items: center; width: 100%; height: 100%;
+  font: 700 0.9rem/1 "Story Display", ui-serif, Georgia, serif; letter-spacing: 0.04em; color: #ffc27a;
+}
+.sm-creator-text { display: grid; gap: 0.2rem; min-width: 0; flex: 1; }
+.sm-creator-name {
+  font: 600 0.98rem/1.2 "Story Display", ui-serif, Georgia, serif; letter-spacing: 0.03em; color: #ffd9a0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.sm-creator-role { font-size: 0.8rem; line-height: 1.3; color: rgba(232, 220, 200, 0.55); }
+.sm-creator-link {
+  flex: none; width: 0.85rem; height: 0.85rem; fill: none; stroke: rgba(255, 171, 94, 0.55); stroke-width: 1.5;
+  stroke-linecap: round; transition: stroke 0.25s, transform 0.3s;
+}
+a.sm-creator:hover .sm-creator-link { stroke: #ffc27a; transform: translate(1px, -1px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .sm-section .sm-l, .sm-section .sm-subtitle { animation: none !important; }
+  .sm-divider-line, .sm-divider-gem { transition: none; }
+  .sm-hint-dot { animation: none; }
+  a.sm-creator, .sm-btn-arrow { transition: none; }
+  a.sm-creator:hover { transform: none; }
+}

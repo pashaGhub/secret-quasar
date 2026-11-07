@@ -81,7 +81,7 @@ export class QuasarEngine {
       this.pointer.set((e.clientX / innerWidth) * 2 - 1, (e.clientY / innerHeight) * 2 - 1);
     };
     addEventListener('pointermove', this.onPointer, { passive: true });
-    this.onContextLost = (e) => { e.preventDefault(); this.stop(); opts.onContextLost?.(); };
+    this.onContextLost = (e) => { e.preventDefault(); this.lost = true; this.stop(); opts.onContextLost?.(); };
     canvas.addEventListener('webglcontextlost', this.onContextLost);
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(canvas);
@@ -134,7 +134,7 @@ export class QuasarEngine {
 
   /** Start (or resume) the render loop. Safe to call repeatedly. */
   start() {
-    if (this.running || this.disposed) return;
+    if (this.running || this.disposed || this.lost) return;
     this.running = true;
     let last = performance.now();
     const loop = (nowMs) => {

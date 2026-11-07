@@ -2,6 +2,7 @@
 // the resting pose from layout.js, so the idle strength can be scaled (lab) or switched off (reduced
 // motion). Joint axes (glTF, character facing +Z): rotation.x > 0 tips forward/down, rotation.y turns
 // toward the character's left (+X), rotation.z rolls.
+import { createWiseActions } from './wise.js';
 
 /** Smooth pseudo-noise in about [-1, 1]: a few incommensurate sines. */
 const wave = (t, s) => (Math.sin(t * 0.73 + s) * 0.5 + Math.sin(t * 1.37 + s * 2.1) * 0.3 + Math.sin(t * 2.91 + s * 3.7) * 0.2);
@@ -54,7 +55,7 @@ export function createIdles(n) {
   const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
 
   const look = {
-    wise: new Wander(0.18, 2.5, 5, 2.2, 1), wiseP: new Wander(0.06, 3, 6, 2, 2),
+    wise: new Wander(0.1, 3, 6, 2, 1), wiseP: new Wander(0.04, 3, 6, 2, 2),
     avatar: new Wander(0.22, 2.2, 4.5, 2.5, 3), avatarP: new Wander(0.08, 2.5, 5, 2, 4),
     nieve: new Wander(0.35, 3, 7, 1.4, 5),
     chicken: new Wander(0.6, 0.6, 1.6, 7, 6),
@@ -64,6 +65,8 @@ export function createIdles(n) {
   const chick = { mode: 'look', timer: 1.5, pecks: 0, k: 0, flap: 0, flapT: 4 };
   const sheep = { up: 0, upTarget: 0, timer: 5 };
   const nod = { k: 1, timer: 3 };
+  const wise = createWiseActions(n, rnd);
+  let wiseAct = { neckPitch: 0, neckYaw: 0, busy: 0 };
 
   /** Resting pose again (reduced motion / idle switched off). */
   function reset() {
@@ -84,14 +87,18 @@ export function createIdles(n) {
       const b = breathe(0.4);
       const gesture = wave(t * 0.8, 1.1);
       const emph = bump(((t + 1.3) % 6.5) / 1.1);           // a small emphasis beat every ~6.5 s
-      const ly = look.wise.update(dt, rnd), lp = look.wiseP.update(dt, rnd);
+      const calmHead = 1 - wiseAct.busy;                     // while acting, his own gaze takes over
+      const ly = look.wise.update(dt, rnd) * calmHead, lp = look.wiseP.update(dt, rnd) * calmHead;
       set('wise_old_man__torso_base', a * (0.012 * b + 0.02 * emph), 0, a * 0.008 * wave(t * 0.3, 2));
-      set('wise_old_man__neck', a * (-0.006 * b + lp + 0.06 * emph) + glance.wise.y, a * ly + glance.wise.x, 0);
+      set('wise_old_man__neck', a * (-0.006 * b + lp + 0.06 * emph * calmHead + wiseAct.neckPitch) + glance.wise.y * calmHead,
+        a * (ly + wiseAct.neckYaw) + glance.wise.x * calmHead, 0);
       set('wise_old_man__shoulder_R', a * (0.06 * gesture - 0.08 * emph), 0, a * 0.03 * wave(t * 0.6, 4));
       set('wise_old_man__elbow_R', a * (0.1 * wave(t * 0.9, 5) - 0.12 * emph));
       set('wise_old_man__shoulder_L', a * 0.02 * b, 0, a * -0.015 * b);
       set('wise_old_man__crown', 0, 0, a * 0.03 * emph);
       set('wise_old_man', 0, 0, a * 0.006 * wave(t * 0.35, 9));
+      // beard stroking / crown fixing (IK on the right arm, blended over the gesture above)
+      if (wise) wiseAct = wise.update(dt, a);
     }
     // --- Player avatar: listening. Breathes, small nods, shifts weight.
     {
@@ -153,7 +160,7 @@ export function createIdles(n) {
     }
   }
 
-  return { update, reset };
+  return { update, reset, wise };
 }
 
 /** Book bob / sway while it hovers. Returns offsets the engine adds to the book's placement. */

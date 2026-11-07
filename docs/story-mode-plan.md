@@ -6,7 +6,7 @@ realistic, emotional voices instead of a flat TTS reader.
 
 This replaces an earlier 2D Rive version of the same scene (characters in front of a levitating book).
 
-Status: **Phase 4 done (animation & interaction)** — next: Phase 5 (section in the site). See the *results* sections at the end.
+Status: **Phase 6 approved — Phase 7 (ship) prepared for Cloudflare Pages: waiting for the Git push / deploy.** See the *results* sections at the end.
 
 ---
 
@@ -116,7 +116,7 @@ Side convention from the 2D work: `_L` = character's left = +X in Blender.
 6. **Fallbacks & performance.** Poster for no-WebGL2 / context loss, reduced motion, pause
    offscreen; never render hero and this scene at the same time. Target 60 fps on a mid-range
    laptop, DPR cap ~1.5, bloom at half res. Phone check.
-7. **Ship.** `npm run lint`, `npm run build`, deploy to Vercel.
+7. **Ship.** `npm run lint`, `npm run build`, deploy to **Cloudflare Pages** (static export; changed from Vercel).
 
 ## Notes
 
@@ -283,3 +283,90 @@ too dark. Fix — the book light and the pages are now separate:
   the sheep from the back. Positions are a list, so more torches can be added from the lab/params.
 - Tone mapping is selectable (`toneMapping`: ACES default; AgX looked flatter/hazier here).
 - Lab localStorage key bumped to `story-mode-lab-params-v2` (older saved lab tweaks are ignored).
+
+**Wise Old Man acts** (`engine/wise.js`, layered on his idle): every ~7–13 s he brings the raised hand to
+his chin and smooths his beard down twice while glancing up and away ("thinking"), then returns to
+gesturing at the book; every ~16–26 s his crown slips sideways, he notices, reaches up and pushes it back.
+The right arm uses a small two-bone IK toward targets relative to his mouth / crown anchors, blended
+over the idle gesture. Lab → Animation: "▶ Wise Old Man: stroke beard" / "crown slips".
+His free head-wandering is reduced so the gestures carry the "thinking".
+
+## Phase 5 results (section in the site)
+
+- `components/projects/story-mode/StoryModeSection.tsx` (server) → placed in `app/page.tsx` after `#content`, before the footer,
+  `id="story-mode"`, `aria-labelledby="story-mode-title"`.
+  Grid ≥ 1024 px: scene `1.45fr` | copy `1fr`; below that the scene stacks above the copy
+  (frame aspect `1.3/1`, under 640 px `1/1.05`). The scene edges fade into the page (CSS mask); focus ring on the frame.
+- `StoryModeCopy.tsx` (no hooks; also used by the lab's desktop frame): kicker, title, rune divider, lede,
+  the three points, and a hint ("Click"/"Tap the tome to turn the page", by `hover: none`).
+- Title: Cinzel variable (OFL, self-hosted `public/projects/story-mode/fonts/`, 26 KB woff2), gold→amber gradient,
+  dark drop shadow. Real heading = visually hidden text; the per-letter title is `aria-hidden`.
+- Reveal is pure CSS keyed on the scene's `data-book` (`.sm-section:has(.sm-scene[data-book=…])`):
+  `closed` → letters unlit (dim, still legible); `opening` → letters ignite left→right (flare, settle to gold),
+  then the divider draws out from the centre gem. Timing scales with `--sm-open`, which `mount.js` sets from the
+  engine's `open-start {duration}` (= `params.anim.openTime`). Reduced motion / no WebGL → title simply lit.
+- `storymode:*` DOM events now bubble, so the page section can listen if needed.
+- The scene element got `role="group"` (its aria-label is now announced).
+- Checked: desktop 1440×900, phone 390×844, reduced motion; no horizontal overflow; lint, tsc, `next build` pass.
+
+### Phase 5 adjustments (round 1)
+
+- **Close / reopen the book.** `book.js` has a `closing` state (cover swings shut over `0.6 × openTime`, clasp
+  re-locks with a small flare); `engine.closeBook()`, `engine.bookState`. Clicking (or Enter on) a closed tome opens it.
+  New events `close-start {duration}` / `closed`; `data-book` gains `closing`; `--sm-close` is set like `--sm-open`.
+  Reduced motion: short plain open/close, no flare or sparks.
+- **Controls bar under the scene** (`StoryModeViewer.tsx`, client): the hint (text follows the state: "…to open it" /
+  "…to turn the page") and an *Open / Close the book* button. Hidden on the still-image fallback.
+  The section and the lab both use the viewer.
+- **Subtitle** "Experience OSRS like never before" under the title (the third point is now "Relive every quest").
+- **Title + subtitle replay on every open**: closing douses the letters (last first) and fades the subtitle; opening
+  re-ignites both (CSS animations restart because the `closed` state has none). The divider retracts/redraws too.
+- **Standing stones face the book**: `layout.js` turns each menhir about its own vertical axis so the rune (local +Z
+  face) points at the book; the modelled lean is kept. Lab toggle *Layout → stones face the book* (`stonesFaceBook`).
+- **Read more** button (`.sm-btn`, carved plate with amber trim; shared with the Open/Close button).
+  Link: `READ_MORE_HREF` in `StoryModeCopy.tsx` (placeholder `#`; http(s) links open in a new tab).
+- **Creators & contributors** band across the bottom of the section (`StoryModeCreators.tsx`, server-rendered).
+  Data: `projects/story-mode/creators.json` (name, role, url, avatar), validated by `projects/story-mode/creators.ts`
+  (only http(s) / mailto / `/path` links; unsafe ones are dropped). Empty link → plain card; empty avatar → initials.
+  Edited in the lab (*Creators editor*, below the scene): edit, reorder, add, remove, live preview, **Save to repo** →
+  `POST /lab/story-mode/creators` (dev only: 404 in production, same-origin only) writes the JSON. Commit it to publish.
+- Lab fix: the copy column collapsed in the lab's flex row since the title became a size container; it now has an
+  explicit flex size.
+
+## Phase 6 results (fallbacks & performance)
+
+- **One heavy scene at a time.** `renderSlot(el, { start, stop })` in `lib/scene` (rewritten): every scene reports
+  how much of the *viewport* it covers; only the scene covering the most renders, the others stop and keep their
+  last frame; nothing renders in a hidden tab. The quasar hero (`quasar/mount.js`) and Story Mode both use it
+  (the hero's own IntersectionObserver is gone). Checked by scrolling: hero runs at the top, hands over as soon as
+  the scene covers more of the screen, and takes over again on the way back.
+- **Lazy boot.** Story Mode creates its WebGL context and fetches `scene.glb` only when the scene is about one
+  screen away (`lazyStart`, margin 100%); before that `data-state="idle"` and the title waits dim. A first-view
+  "open the book" that happens before boot is kept and applied. The lab boots immediately (`eager`).
+- **Poster** `public/projects/story-mode/poster.jpg` (1552×1230, 132 KB, rendered from the scene: book open).
+  Shown (`data-state="fallback"`) with no WebGL2, after a lost context, or if the engine/model fails to load;
+  the controls bar hides and the title stays lit. `loading="lazy"` + `display:none` → not downloaded otherwise.
+  Both engines now refuse to restart after a context loss (`lost` flag).
+- **Frame rate.** Resolution starts at the DPR cap (1.5 desktop / 1.25 phones) and adapts to hold ~60 fps:
+  median frame time over ~45 frames, < 48 fps → ×0.85, > 57 fps → ×1.1 back up to the cap, one step per 2.5 s,
+  floor 0.85×. Lab: the readout shows `fps · resolution` from the engine; *render resolution* pins a value.
+- **Bloom** already runs at half resolution (three's `UnrealBloomPass` builds its chain from w/2 × h/2).
+- **Phones:** shadow map 512 (1024 desktop), no MSAA, fewer embers/dust (Phase 4). iPhone 13 / Pixel 7
+  emulation: DPR capped to 1.25, no horizontal overflow, controls wrap cleanly.
+- **Reduced motion** (Phase 4/5): calm scene, book starts open, short plain open/close, no sparks/flashes.
+- Note: frame rates can't be measured in the headless (software GL) check — confirm on a real laptop/phone with
+  the lab's fps readout.
+
+
+
+## Phase 7 notes (ship — Cloudflare Pages)
+
+- **Static export.** `next.config.ts`: `output: "export"`; `cacheComponents` / `partialPrefetching` removed (PPR can't
+  be used with export; every page is static anyway). `npm run build` → `out/` (44 files, ~2.5 MB).
+- **Lab stays local.** `app/lab/story-mode/page.dev.tsx` and `creators/route.dev.ts`; `pageExtensions` only includes
+  `dev.tsx`/`dev.ts` under `next dev`, so `/lab/*` is a 404 in production and the dev-only POST route is gone.
+- **Site URL.** `app/layout.tsx` uses `NEXT_PUBLIC_SITE_URL`, else Cloudflare's `CF_PAGES_URL`.
+- **Headers.** `public/_headers`: immutable `/_next/static/*`, 1-day + SWR for `/projects/*` and `/quasar/*`, nosniff +
+  referrer policy.
+- **Checked:** lint, tsc, build; served `out/` statically — hero and Story Mode go live, the book opens, no failed
+  requests, `/lab/story-mode` → 404; `next dev` still serves the lab.

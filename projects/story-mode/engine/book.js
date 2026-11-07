@@ -1,5 +1,5 @@
 // The tome's behaviour: closed → unlock (clasp swings, rune flares, spark burst) → opens; then page
-// turns. Page turns bend the single 24-segment turn page in its vertex shader (with a curl), show
+// turns; and it can be closed again (cover swings shut, clasp re-locks) and reopened. Page turns bend the single 24-segment turn page in its vertex shader (with a curl), show
 // the current spread on its front and the next spread on its back, and leave a trail of sparks.
 // Pages are "spreads" (one texture each: left page u 0–0.5, right page u 0.5–1). Today there is one
 // spread (page_atlas.jpg); real text can be added later as more textures (e.g. CanvasTextures).
@@ -86,7 +86,7 @@ export function createBook(n, { calm, sparks, emit }) {
   const S = {
     state: calm ? 'open' : 'closed',
     t: 0, open: calm ? 1 : 0, clasp: calm ? 1 : 0, flash: 0,
-    spread: 0, turn: null, turns: 0,
+    spread: 0, turn: null, turns: 0, pendingClose: false,
   };
 
   const tmp = new THREE.Vector3();
@@ -104,6 +104,14 @@ export function createBook(n, { calm, sparks, emit }) {
     spine.rotation.z = (Math.PI / 2) * u;
   }
 
+  const openTime = (A) => (calm ? 0.35 : A.openTime);
+  const closeTime = (A) => (calm ? 0.25 : Math.max(0.4, A.openTime * 0.6));
+  let lastA = null;
+  function startClose() {
+    S.state = 'closing'; S.t = 0; S.pendingClose = false;
+    emit('close-start', { duration: lastA ? closeTime(lastA) : 1.3 });
+  }
+
   return {
     get state() { return S.state; },
     get isOpen() { return S.state === 'open'; },
@@ -113,16 +121,24 @@ export function createBook(n, { calm, sparks, emit }) {
     /** 0..1 extra flare (unlock, page turn). */
     get flash() { return S.flash; },
 
-    /** First view: unlock and open (once). */
+    /** Unlock and open (first view, a click on the closed tome, or the Open button). */
     requestOpen() {
       if (S.state !== 'closed') return;
       S.state = 'unlocking'; S.t = 0;
     },
-    /** Reset to closed (lab "replay"). */
+    /** Close the book (animated). A page turn in progress finishes first. Returns false if not open. */
+    requestClose() {
+      if (S.state !== 'open') return false;
+      if (S.turn) { S.pendingClose = true; return true; }
+      startClose();
+      return true;
+    },
+    /** Snap shut with no animation (lab "replay"). */
     close() {
-      S.state = 'closed'; S.t = 0; S.open = 0; S.clasp = 0; S.flash = 0; S.turn = null;
+      S.state = 'closed'; S.t = 0; S.open = 0; S.clasp = 0; S.flash = 0; S.turn = null; S.pendingClose = false;
       turnMesh.visible = false;
       for (const m of pageMats) m.userData.u.uMix.value = 0;
+      emit('closed', {});
     },
     /** Turn to the next spread. Returns false if the book is closed or already turning. */
     turnPage() {
@@ -146,22 +162,37 @@ export function createBook(n, { calm, sparks, emit }) {
 
     update(dt, P) {
       const A = P.anim, vtilt = (P.book.vtilt * Math.PI) / 180;
+      lastA = A;
       S.flash = Math.max(0, S.flash - dt * 1.6);
       if (S.state === 'unlocking') {
         S.t += dt;
-        S.clasp = ease.inOutCubic(Math.min(1, S.t / 0.55));
-        S.flash = Math.max(S.flash, bump(Math.min(1, S.t / 0.6)));
-        if (S.t >= 0.45) {
+        // reduced motion: no flare or sparks, and a short plain open
+        const unlockT = calm ? 0.15 : 0.45;
+        S.clasp = ease.inOutCubic(Math.min(1, S.t / (unlockT + 0.1)));
+        if (!calm) S.flash = Math.max(S.flash, bump(Math.min(1, S.t / 0.6)));
+        if (S.t >= unlockT) {
           root.getWorldPosition(tmp);
-          if (A.sparks > 0) sparks.emit(tmp, Math.round(110 * A.sparks), { speed: 1.5, up: 0.7, lifeTime: 1.4 });
+          if (!calm && A.sparks > 0) sparks.emit(tmp, Math.round(110 * A.sparks), { speed: 1.5, up: 0.7, lifeTime: 1.4 });
           S.state = 'opening'; S.t = 0;
-          emit('open-start', { duration: A.openTime });
+          emit('open-start', { duration: openTime(A) });
         }
       } else if (S.state === 'opening') {
         S.t += dt;
-        const k = Math.min(1, S.t / A.openTime);
+        const k = Math.min(1, S.t / openTime(A));
         S.open = ease.inOutCubic(k);
         if (k >= 1) { S.state = 'open'; emit('opened', {}); }
+      } else if (S.state === 'closing') {
+        // cover swings shut (from wherever it is), then the clasp swings back and locks with a small flare
+        S.t += dt;
+        const ct = closeTime(A), lockT = calm ? 0.1 : 0.45;
+        const k = Math.min(1, S.t / ct);
+        S.open = Math.min(S.open, 1 - ease.inOutCubic(k));
+        if (k >= 1) {
+          const kl = Math.min(1, (S.t - ct) / lockT);
+          S.clasp = 1 - ease.inOutCubic(kl);
+          if (!calm) S.flash = Math.max(S.flash, 0.45 * bump(kl));
+          if (kl >= 1) { S.state = 'closed'; S.t = 0; S.clasp = 0; emit('closed', {}); }
+        }
       }
       clasp.rotation.z = -2.9 * S.clasp;
       setOpen(S.open, vtilt);
@@ -192,6 +223,7 @@ export function createBook(n, { calm, sparks, emit }) {
           turnMesh.visible = false;
           S.spread = T.to; S.turn = null;
           emit('turned', { spread: S.spread });
+          if (S.pendingClose) startClose();
         }
       }
     },

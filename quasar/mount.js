@@ -11,6 +11,7 @@ import { QuasarEngine } from './engine/QuasarEngine.js';
 import { mountDomHud } from './hud/DomHud.js';
 import { mountTitle } from './hud/Title.js';
 import { T } from './timeline.js';
+import { renderSlot } from '@/lib/scene';
 
 const make = (tag, cls, attrs = {}) => {
   const el = document.createElement(tag);
@@ -90,19 +91,12 @@ export function mountQuasar(hero, stage, titleEl) {
     disposers.push(() => clearTimeout(id));
   }
 
-  // Render only while the hero is on screen and the tab is visible: the raymarcher is heavy,
-  // and the intro should not run its clock while nobody is looking at it.
-  let inView = true;
-  const apply = () => {
-    const active = inView && !document.hidden;
-    if (active) engine.start(); else engine.stop();
-  };
-  const io = new IntersectionObserver(([e]) => { inView = e.isIntersecting; apply(); }, { threshold: 0.02 });
-  io.observe(hero);
-  document.addEventListener('visibilitychange', apply);
-  disposers.push(() => { io.disconnect(); document.removeEventListener('visibilitychange', apply); });
+  // Render only while the hero is on screen, the tab is visible and no other heavy scene covers
+  // more of the screen (shared render slot): the raymarcher is heavy, and the intro should not run
+  // its clock while nobody is looking at it.
+  const slot = renderSlot(hero, { name: 'quasar', start: () => engine.start(), stop: () => engine.stop() });
+  disposers.push(() => slot.release());
 
-  engine.start();
   hero.dataset.state = 'live';
   return dispose;
 }

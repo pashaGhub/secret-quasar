@@ -1,24 +1,41 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
+// Set NEXT_PUBLIC_SITE_URL (e.g. https://secretquasar.com) in the Cloudflare Pages build settings so
+// social cards and canonical URLs use the real domain. CF_PAGES_URL is the per-deploy preview URL.
 const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL ??
-  (process.env.VERCEL_PROJECT_PRODUCTION_URL
-    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-    : "http://localhost:3000");
+  process.env.CF_PAGES_URL ??
+  "http://localhost:3000";
+
+const description =
+  "We care about the road to an achievement, not just the finish line. Secret Quasar builds game experiences worth remembering.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: "Secret Quasar",
-  description:
-    "Secret Quasar — a real-time neon quasar: a GPU-raymarched black hole with segmented energy rings, laser jets and a live visor HUD.",
+  description,
   openGraph: {
     title: "Secret Quasar",
-    description: "A real-time neon quasar, rendered live in your browser.",
-    images: [{ url: "/quasar/poster.jpg", width: 1920, height: 1080 }],
+    description,
+    siteName: "Secret Quasar",
+    // 1200×630 link-preview image; source in docs/og/og.html
+    images: [
+      {
+        url: "/quasar/og.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Secret Quasar — a glowing neon black hole",
+      },
+    ],
     type: "website",
   },
-  twitter: { card: "summary_large_image" },
+  twitter: {
+    card: "summary_large_image",
+    title: "Secret Quasar",
+    description,
+    images: ["/quasar/og.jpg"],
+  },
 };
 
 export const viewport: Viewport = {

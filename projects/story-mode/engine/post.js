@@ -122,6 +122,11 @@ export function createPost(renderer, scene, overlayScene, camera, { samples = 4 
   rt.depthTexture = new THREE.DepthTexture(size.x, size.y);
   rt.depthTexture.type = THREE.UnsignedIntType;
   const composer = new EffectComposer(renderer, rt);
+  // The composer clones `rt` for its second buffer, and a cloned DepthTexture shares the same GPU
+  // texture (same Source). The particles sample the scene depth while drawing into the other buffer,
+  // so each buffer needs its own depth texture — otherwise that's a feedback loop / stale depth.
+  composer.renderTarget2.depthTexture = new THREE.DepthTexture(size.x, size.y);
+  composer.renderTarget2.depthTexture.type = THREE.UnsignedIntType;
   const renderPass = new RenderPass(scene, camera);
   const dof = new DofPass(camera);
   const overlay = new OverlayPass(overlayScene, camera, dof);

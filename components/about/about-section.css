@@ -1,0 +1,441 @@
+/* About the project — typographic art piece.
+   States: Reveal.tsx sets data-reveal (pending → in) on the intro and the feelings;
+   AboutFx sets on the section data-live (on screen), data-road (draw | done), data-fx (JS running),
+   and data-scr (wait → run → done) on decoding phrases.
+   Defaults are the final look, so nothing depends on JS to be readable. */
+
+.ab-section {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  container-type: inline-size;
+  background: #000;
+  --ab-wall-size: 12px;
+  --ab-wall-lh: 26px;
+  --ab-light: 620px;
+}
+
+/* ---------- the wall of memories ---------- */
+
+.ab-wall {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  isolation: isolate; /* the spotlight's blend stays inside the wall */
+  overflow: hidden;
+  pointer-events: none;
+  background: #000;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 9%, #000 90%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 9%, #000 90%, transparent);
+}
+.ab-wall-rows {
+  position: absolute;
+  inset: 0;
+  font-family: var(--font-mono);
+  font-size: var(--ab-wall-size);
+  line-height: var(--ab-wall-lh);
+  letter-spacing: 0.04em;
+  color: rgb(205 228 255 / 0.12);
+}
+.ab-row {
+  height: var(--ab-wall-lh);
+  overflow: hidden;
+  white-space: nowrap;
+}
+.ab-row-track {
+  display: inline-block;
+  white-space: nowrap;
+  animation: ab-drift 90s linear infinite;
+  animation-play-state: paused;
+}
+.ab-section[data-live] .ab-row-track {
+  animation-play-state: running;
+}
+@keyframes ab-drift {
+  to { transform: translateX(-50%); }
+}
+.ab-f {
+  color: color-mix(in srgb, var(--c) 42%, transparent);
+  text-transform: uppercase;
+  letter-spacing: 0.32em;
+}
+.ab-secret {
+  color: rgb(64 242 255 / 0.4);
+}
+
+/* spotlight: a coloured colour-dodge — lights the words it passes in the road's hue, leaves black untouched */
+.ab-light {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--ab-light);
+  height: var(--ab-light);
+  border-radius: 50%;
+  /* --lc is set by AboutFx from the spectrum (cyan at the top of the section → orange at the end) */
+  --lc: 64 242 255;
+  background: radial-gradient(closest-side, rgb(var(--lc) / 0.62), rgb(var(--lc) / 0.34) 42%, rgb(var(--lc) / 0.08) 75%, transparent);
+  mix-blend-mode: color-dodge;
+  transform: translate3d(-9999px, 0, 0);
+  will-change: transform;
+}
+
+/* colour haze sits above the wall (not inside it) so the spotlight's dodge never blows it out */
+.ab-wall-glow {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(42rem 26rem at 10% 12%, rgb(64 242 255 / 0.06), transparent 70%),
+    radial-gradient(40rem 24rem at 92% 40%, rgb(160 77 255 / 0.06), transparent 70%),
+    radial-gradient(44rem 26rem at 30% 72%, rgb(255 63 174 / 0.05), transparent 70%),
+    radial-gradient(36rem 20rem at 60% 100%, rgb(255 138 31 / 0.06), transparent 70%);
+}
+
+/* ---------- the road ---------- */
+
+.ab-road {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  overflow: visible;
+  pointer-events: none;
+}
+.ab-road path {
+  fill: none;
+  stroke-linecap: round;
+}
+.ab-road-track {
+  stroke: rgb(255 255 255 / 0.1);
+  stroke-width: 1.5;
+  stroke-dasharray: 2 9;
+}
+.ab-road-fill {
+  stroke-width: 2.5;
+  filter: drop-shadow(0 0 6px rgb(160 77 255 / 0.7)) drop-shadow(0 0 14px rgb(255 63 174 / 0.3));
+}
+.ab-road-head {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 2;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 8px #fff, 0 0 20px var(--cyan), 0 0 42px var(--pink);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+/* ---------- content ---------- */
+
+.ab-inner {
+  position: relative;
+  z-index: 3;
+  max-width: 76rem;
+  margin: 0 auto;
+  padding: clamp(6rem, 14cqi, 10rem) 1.5rem clamp(4rem, 8cqi, 6rem);
+}
+.ab-waypoint {
+  display: block;
+  height: 0;
+}
+
+.ab-kicker {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.4em;
+  color: rgb(64 242 255 / 0.8);
+}
+.ab-kicker::before {
+  content: "";
+  width: 2.25rem;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cyan));
+  transform-origin: left;
+}
+
+.ab-title {
+  margin-top: 1rem;
+  max-width: 11.5em;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(2.3rem, 6.6cqi, 5.6rem);
+  line-height: 1.04;
+  text-shadow: 0 0 30px #000, 0 0 6px #000;
+}
+.ab-w {
+  display: inline-block;
+}
+
+/* gradient words. In the title it also drifts slowly. */
+.ab-spectrum,
+.ab-hl {
+  font-style: normal;
+  background: linear-gradient(90deg, var(--cyan), var(--violet) 33%, var(--pink) 66%, var(--orange));
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+}
+/* background-clip:text only paints inside the box; extend it so descenders (p, g, y) aren't cut */
+.ab-spectrum,
+.ab-hl {
+  padding-block: 0.02em 0.22em;
+}
+.ab-spectrum {
+  margin-bottom: -0.22em;
+  white-space: nowrap;
+  animation: ab-shift 9s ease-in-out infinite alternate;
+}
+.ab-hl {
+  background-size: 140% 100%;
+  filter: drop-shadow(0 0 18px rgb(160 77 255 / 0.35));
+}
+@keyframes ab-shift {
+  from { background-position: 0% 50%; }
+  to { background-position: 100% 50%; }
+}
+
+.ab-block {
+  position: relative;
+  margin-top: clamp(7rem, 20cqi, 15rem);
+}
+.ab-intro {
+  position: relative;
+  width: fit-content;
+}
+/* a pool of darkness behind each block of words: the wall and the road dip under them */
+.ab-intro::before,
+.ab-block::before {
+  content: "";
+  position: absolute;
+  inset: -3.5rem -5rem;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(closest-side, rgb(0 0 0 / 0.95), rgb(0 0 0 / 0.78) 55%, transparent);
+}
+.ab-block-right {
+  margin-left: auto;
+  max-width: 54rem;
+  text-align: right;
+}
+.ab-block-center {
+  text-align: center;
+}
+
+.ab-phrase {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(1.55rem, 4.1cqi, 3.5rem);
+  line-height: 1.16;
+  color: var(--foreground);
+  text-shadow: 0 0 28px #000, 0 0 6px #000;
+}
+.ab-phrase-xl {
+  font-size: clamp(1.9rem, 6.6cqi, 4.6rem);
+  line-height: 1.1;
+}
+.ab-lead {
+  font-size: 0.42em;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: rgb(230 244 255 / 0.8);
+}
+.ab-scr {
+  position: relative;
+  display: block;
+}
+.ab-scr-ghost {
+  display: block;
+  visibility: hidden;
+}
+.ab-scr-live {
+  position: absolute;
+  inset: 0;
+}
+.ab-scr-live[data-scr="wait"] { opacity: 0; }
+.ab-scr-live[data-scr="run"] { color: rgb(150 240 255); }
+.ab-scr-live[data-scr="run"] .ab-hl { filter: drop-shadow(0 0 10px rgb(64 242 255 / 0.8)); }
+
+.ab-aside {
+  margin-top: 1.75rem;
+  margin-left: auto;
+  max-width: 27rem;
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: rgb(230 244 255 / 0.62);
+  text-shadow: 0 0 18px #000, 0 0 4px #000;
+}
+.ab-aside-center {
+  margin-top: 2.75rem;
+  margin-inline: auto;
+  max-width: 34rem;
+  text-align: center;
+}
+.ab-dim {
+  color: rgb(230 244 255 / 0.4);
+}
+
+/* ---------- feelings ---------- */
+
+.ab-feel {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.15em 0.42em;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(2rem, 7cqi, 6.4rem);
+  line-height: 1;
+  text-transform: uppercase;
+}
+.ab-feel-w {
+  font-size: calc(1em * var(--s));
+  transform: translateY(var(--y));
+  color: color-mix(in srgb, var(--c) 10%, transparent);
+  -webkit-text-stroke: 1.5px var(--c);
+  filter: drop-shadow(0 0 14px color-mix(in srgb, var(--c) 55%, transparent));
+  transition: color 0.35s ease, transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
+  --d: calc(0.25s + var(--fi) * 0.3s);
+  animation: ab-buzz 11s linear calc(var(--d) + 3s + var(--fi) * 1.7s) infinite;
+}
+.ab-feel-w:hover {
+  color: var(--c);
+  transform: translateY(var(--y)) scale(1.06);
+}
+@keyframes ab-buzz {
+  0%, 90%, 93%, 100% { opacity: 1; }
+  91% { opacity: 0.3; }
+  92% { opacity: 0.85; }
+  92.5% { opacity: 0.45; }
+}
+[data-reveal="pending"] .ab-feel-w {
+  opacity: 0.4;
+  -webkit-text-stroke-color: rgb(255 255 255 / 0.14);
+  color: transparent;
+  filter: none;
+}
+[data-reveal="in"] .ab-feel-w {
+  animation:
+    ab-ignite 1.1s ease var(--d) both,
+    ab-buzz 11s linear calc(var(--d) + 3s + var(--fi) * 1.7s) infinite;
+}
+@keyframes ab-ignite {
+  0% { opacity: 0.4; -webkit-text-stroke-color: rgb(255 255 255 / 0.14); }
+  12% { opacity: 1; -webkit-text-stroke-color: var(--c); }
+  18% { opacity: 0.35; }
+  30% { opacity: 1; }
+  36% { opacity: 0.55; }
+  100% { opacity: 1; -webkit-text-stroke-color: var(--c); }
+}
+
+/* ---------- the memory at the end of the road ---------- */
+
+.ab-end {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  margin-top: clamp(5rem, 11cqi, 8rem);
+}
+.ab-star {
+  width: 46px;
+  height: 46px;
+  overflow: visible;
+  filter: drop-shadow(0 0 8px var(--orange)) drop-shadow(0 0 24px rgb(255 138 31 / 0.6));
+  transition: opacity 0.6s ease, transform 1s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+.ab-star path {
+  fill: #ffd6a8;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ab-twinkle 3.6s ease-in-out infinite;
+}
+@keyframes ab-twinkle {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(0.8) rotate(14deg); }
+}
+.ab-section[data-road="draw"] .ab-star {
+  opacity: 0.22;
+  transform: scale(0.55);
+  filter: none;
+}
+.ab-end::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 46px;
+  height: 46px;
+  margin: -23px 0 0 -23px;
+  border-radius: 50%;
+  border: 1.5px solid var(--orange);
+  opacity: 0;
+  pointer-events: none;
+}
+.ab-section[data-road="done"] .ab-end::after {
+  animation: ab-ring 1.6s cubic-bezier(0.2, 0.7, 0.2, 1) 0.1s both;
+}
+@keyframes ab-ring {
+  0% { transform: scale(0.5); opacity: 0; }
+  1% { transform: scale(0.5); opacity: 0.9; }
+  100% { transform: scale(4.5); opacity: 0; }
+}
+
+/* ---------- intro reveal ---------- */
+
+[data-reveal="pending"] .ab-kicker { opacity: 0; transform: translateX(-10px); }
+[data-reveal="pending"] .ab-kicker::before { transform: scaleX(0); }
+[data-reveal="pending"] .ab-w { opacity: 0; transform: translateY(0.45em); filter: blur(8px); }
+[data-reveal="pending"] .ab-spectrum { filter: saturate(0) brightness(2.4) blur(8px); }
+
+[data-reveal="in"] .ab-kicker { transition: opacity 0.7s ease, transform 0.7s ease; }
+[data-reveal="in"] .ab-kicker::before { transition: transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) 0.1s; }
+[data-reveal="in"] .ab-w {
+  transition:
+    opacity 0.8s ease calc(0.15s + var(--wi) * 0.09s),
+    transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) calc(0.15s + var(--wi) * 0.09s),
+    filter 0.8s ease calc(0.15s + var(--wi) * 0.09s);
+}
+[data-reveal="in"] .ab-spectrum {
+  transition:
+    opacity 0.8s ease calc(0.15s + var(--wi) * 0.09s),
+    transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) calc(0.15s + var(--wi) * 0.09s),
+    filter 1.8s ease 0.8s;
+}
+
+/* ---------- phones ---------- */
+
+@container (max-width: 640px) {
+  .ab-block-right { text-align: left; }
+  .ab-aside { margin-left: 0; }
+  .ab-aside-center { margin-inline: auto; }
+  .ab-feel { gap: 0.2em 0.35em; }
+}
+/* the custom properties above live on the section itself, which can't query its own size */
+@media (max-width: 640px) {
+  .ab-section { --ab-wall-size: 10px; --ab-wall-lh: 21px; --ab-light: 380px; }
+}
+
+/* ---------- reduced motion: the full picture, nothing moving ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .ab-section *,
+  .ab-section *::before,
+  .ab-section *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+  .ab-light,
+  .ab-road-head { display: none; }
+}

@@ -130,11 +130,17 @@ export function attachLab(engine, params, section, hooks = {}) {
   const animActions = {
     replay: () => { engine.resetBook(); setTimeout(() => engine.openBook(), 500); },
     turn: () => engine.turnPage(),
+    close: () => engine.closeBook(),
     say: () => hooks.say?.('wise_old_man', lines[line++ % lines.length], 2600),
+    beard: () => engine.idles?.wise?.trigger('beard'),
+    crown: () => engine.idles?.wise?.trigger('crown'),
   };
   anim.add(animActions, 'replay').name('▶ Replay book opening');
   anim.add(animActions, 'turn').name('▶ Turn page');
+  anim.add(animActions, 'close').name('▶ Close book');
   anim.add(animActions, 'say').name('▶ Test overhead text');
+  anim.add(animActions, 'beard').name('▶ Wise Old Man: stroke beard');
+  anim.add(animActions, 'crown').name('▶ Wise Old Man: crown slips');
 
   const place = gui.addFolder('Layout').close();
   for (const name of Object.keys(params.place)) {
@@ -148,6 +154,7 @@ export function attachLab(engine, params, section, hooks = {}) {
   }
   const mh = { ...Object.fromEntries(params.menhirs.map((on, i) => [`stone ${i + 1}`, on])) };
   Object.keys(mh).forEach((k, i) => place.add(mh, k).onChange((on) => { params.menhirs[i] = on; changed(); }));
+  place.add(params, 'stonesFaceBook').name('stones face the book');
 
   gui.onChange(changed);
 
@@ -166,6 +173,9 @@ export function attachLab(engine, params, section, hooks = {}) {
   };
   ui.paused = false;
   gui.add(ui, 'paused').name('pause').onChange((p) => (p ? engine.stop() : engine.start()));
+  const quality = { resolution: 'auto' };
+  gui.add(quality, 'resolution', ['auto', '0.75', '1', '1.25', '1.5', '2']).name('render resolution')
+    .onChange((v) => (v === 'auto' ? engine.setPixelRatio(engine.maxPR) : engine.setPixelRatio(Number(v), { fixed: true })));
   gui.add(actions, 'copy').name('Copy params (JSON)');
   gui.add(actions, 'reset').name('Reset to defaults');
 
@@ -174,10 +184,10 @@ export function attachLab(engine, params, section, hooks = {}) {
   fps.className = 'sm-lab-fps';
   fps.style.cssText = 'position:absolute;left:8px;top:8px;z-index:5;font:11px ui-monospace,monospace;color:#cfc3ff;background:#0008;padding:2px 6px;border-radius:3px;pointer-events:none';
   section.append(fps);
-  let frames = 0, last = performance.now(), raf;
-  const tick = (now) => {
-    frames++;
-    if (now - last > 500) { fps.textContent = `${Math.round((frames * 1000) / (now - last))} fps`; frames = 0; last = now; }
+  let raf;
+  const tick = () => {
+    const st = engine.stats;
+    fps.textContent = engine.running ? `${st.fps} fps · ${st.pr.toFixed(2)}× res${engine.fixedQuality ? ' (fixed)' : ''}` : 'paused';
     raf = requestAnimationFrame(tick);
   };
   raf = requestAnimationFrame(tick);

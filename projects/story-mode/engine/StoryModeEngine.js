@@ -3,7 +3,7 @@
 // renders it through the post chain. Browser-only; created by mount.js.
 //
 // Events (engine.on): 'open-start' {duration} · 'opened' · 'turn' {from,to} · 'turned' {spread}
-//                     'hover' {book: boolean} · 'book-click'
+//                     'close-start' {duration} · 'closed' · 'hover' {book: boolean} · 'book-click'
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
@@ -34,7 +34,14 @@ export class StoryModeEngine {
     this.disposed = false;
     this.time = 0;
     this.mobile = isMobile();
-    this.pr = pixelRatioCap({ desktop: 1.5, mobile: 1.25 });
+    // resolution: starts at the DPR cap and adapts to hold ~60 fps (see adaptQuality)
+    this.maxPR = pixelRatioCap({ desktop: 1.5, mobile: 1.25 });
+    this.minPR = Math.min(this.maxPR, 0.85);              // below this the low-poly edges turn to mush
+    this.pr = this.maxPR;
+    this.frameTimes = [];
+    this.lastQualityChange = 0;
+    /** Measured render rate and current resolution scale (the lab shows these). */
+    this.stats = { fps: 0, pr: this.pr };
     this.listeners = {};
 
     const r = (this.renderer = createRenderer(canvas, { pixelRatio: this.pr }));
@@ -69,7 +76,7 @@ export class StoryModeEngine {
     this.glance = { wise: { x: 0, y: 0 }, avatar: { x: 0, y: 0 } };
     this.bindPointer();
 
-    this.onContextLost = (e) => { e.preventDefault(); this.stop(); opts.onContextLost?.(); };
+    this.onContextLost = (e) => { e.preventDefault(); this.lost = true; this.stop(); opts.onContextLost?.(); };
     canvas.addEventListener('webglcontextlost', this.onContextLost);
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(canvas);
@@ -81,6 +88,8 @@ export class StoryModeEngine {
       this.root = gltf.scene;
       this.staged = stage(this.root, this.params);
       this.idles = createIdles(this.staged.n);
+      // the wise man's crown slips as the book opens (he notices, and pushes it back)
+      this.on('open-start', ({ duration }) => this.idles?.wise?.cue('crown', Math.min(0.6, duration * 0.3)));
       this.book = createBook(this.staged.n, {
         calm: this.calm, sparks: this.particles.sparks, emit: (type, detail) => this.emit(type, detail),
       });
@@ -96,10 +105,17 @@ export class StoryModeEngine {
   emit(type, detail) { this.listeners[type]?.forEach((fn) => { try { fn(detail); } catch (e) { console.error(e); } }); }
 
   // ------------------------------------------------------------------ public actions
-  /** Unlock + open the book (first view). Safe to call before the model has loaded. */
+  /** Unlock + open the book (first view, Open button). Safe to call before the model has loaded. */
   openBook() { this.wantOpen = true; this.book?.requestOpen(); }
-  /** Turn to the next page (click / Enter / Space). */
-  turnPage() { return this.book?.turnPage() ?? false; }
+  /** Close the book again (Close button). The title dims; opening it re-ignites everything. */
+  closeBook() { this.wantOpen = false; return this.book?.requestClose() ?? false; }
+  /** closed | unlocking | opening | open | closing ('closed' before the model has loaded). */
+  get bookState() { return this.book?.state ?? 'closed'; }
+  /** Turn to the next page (click / Enter / Space). On a closed tome it opens it instead. */
+  turnPage() {
+    if (this.book?.state === 'closed') { this.openBook(); return true; }
+    return this.book?.turnPage() ?? false;
+  }
   /** Lab: close the book again so the opening can be replayed. */
   resetBook() { this.book?.close(); }
 
@@ -124,7 +140,7 @@ export class StoryModeEngine {
     L.book = new THREE.PointLight(0xffab5e, 2.5, 6, 1.6);
     L.pool = new THREE.SpotLight(0xffab5e, 8, 7, 58 * DEG, 0.75, 1.6);
     L.pool.castShadow = true;
-    L.pool.shadow.mapSize.set(1024, 1024);
+    L.pool.shadow.mapSize.setScalar(this.mobile ? 512 : 1024);
     L.pool.shadow.bias = -0.0004;
     L.pool.shadow.normalBias = 0.02;
     L.pool.shadow.camera.near = 0.2;
@@ -277,14 +293,20 @@ export class StoryModeEngine {
 
   // ------------------------------------------------------------------ loop
   start() {
-    if (this.running || this.disposed) return;
+    if (this.running || this.disposed || this.lost) return;
     this.running = true;
     let last = performance.now();
+    this.lastQualityChange = last / 1000;          // let the first frames (shader warm-up) pass
+    let frames = 0, since = last;
     const loop = (now) => {
       if (!this.running) return;
-      const dt = Math.min(0.1, (now - last) / 1000);
+      const raw = (now - last) / 1000;
+      const dt = Math.min(0.1, raw);
       last = now;
       this.renderFrame(dt);
+      this.adaptQuality(raw, now / 1000);
+      frames++;
+      if (now - since > 500) { this.stats.fps = Math.round((frames * 1000) / (now - since)); frames = 0; since = now; }
       this.raf = requestAnimationFrame(loop);
     };
     this.raf = requestAnimationFrame(loop);
@@ -293,6 +315,32 @@ export class StoryModeEngine {
   stop() {
     this.running = false;
     cancelAnimationFrame(this.raf);
+    this.frameTimes.length = 0;                    // a pause must not skew the frame-time average
+  }
+
+  /**
+   * Adaptive resolution: holds ~60 fps by trading pixels, between minPR and the DPR cap, with
+   * hysteresis (judged over ~45 frames, at most one step every 2.5 s).
+   */
+  adaptQuality(dt, now) {
+    if (this.fixedQuality) return;
+    this.frameTimes.push(dt);
+    if (this.frameTimes.length < 45 || now - this.lastQualityChange < 2.5) return;
+    const sorted = this.frameTimes.slice().sort((a, b) => a - b);
+    this.frameTimes.length = 0;
+    const typical = sorted[Math.floor(sorted.length * 0.5)];   // median: one hitch doesn't count
+    let pr = this.pr;
+    if (typical > 1 / 48) pr = Math.max(this.minPR, pr * 0.85);
+    else if (typical < 1 / 57 && pr < this.maxPR) pr = Math.min(this.maxPR, pr * 1.1);
+    if (Math.abs(pr - this.pr) > 0.02) { this.setPixelRatio(pr); this.lastQualityChange = now; }
+  }
+
+  /** Render resolution scale (CSS px → drawing-buffer px). Fixed values turn adaptation off. */
+  setPixelRatio(pr, { fixed = false } = {}) {
+    this.fixedQuality = fixed;
+    this.pr = pr;
+    this.stats.pr = pr;
+    this.resize();
   }
 
   renderFrame(dt) {
