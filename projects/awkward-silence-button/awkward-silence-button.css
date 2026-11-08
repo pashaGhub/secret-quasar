@@ -1,0 +1,17 @@
+/* Awkward Silence Button scene shell (prefix asb-). The canvas fills .asb-scene; it fades in once
+   icons.glb is loaded. */
+.asb-scene {
+  position: relative; width: 100%; height: 100%; overflow: hidden;
+  background: radial-gradient(110% 80% at 50% 62%, #1a0716 0%, #07030a 55%, #000 100%);
+  isolation: isolate; outline: none; container-type: inline-size;
+}
+.asb-scene:focus-visible { outline: 1px solid rgba(255, 63, 174, .6); outline-offset: -3px; }
+.asb-stage, .asb-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.asb-canvas { opacity: 0; transition: opacity .9s ease; }
+.asb-scene[data-state='live'] .asb-canvas { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .asb-canvas { transition: none; } }
+
+/* static fallback (no WebGL2 / context lost / load failure): poster.jpg, poster-narrow.jpg on phones */
+.asb-poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: none; }
+.asb-scene[data-state='fallback'] .asb-poster { display: block; }
+.asb-scene[data-state='fallback'] .asb-canvas { display: none; }

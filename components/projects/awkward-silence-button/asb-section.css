@@ -1,0 +1,250 @@
+/* Awkward Silence Button section (prefix asb-). Arcade neon, in the site's language: black, cyan /
+   violet / pink, Orbitron (--font-display) and Share Tech Mono (--font-mono), both declared by the
+   hero's CSS on the home page.
+   States (on .asb-section): data-title = armed | on (AsbSectionFx). On chips: data-lit.
+   Defaults are the final look, so nothing depends on JS to be readable. */
+
+.asb-section {
+  --asb-red: #ff2a4a;
+  --asb-pink: #ff3fae;
+  --asb-pop: cubic-bezier(0.34, 1.56, 0.64, 1); /* the app's icon-pop easing */
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: #000;
+  color: var(--foreground);
+}
+.asb-section-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(45% 50% at 72% 55%, rgb(255 63 174 / 0.09), transparent 70%),
+    radial-gradient(35% 40% at 20% 40%, rgb(64 242 255 / 0.04), transparent 70%),
+    linear-gradient(to bottom, #000 0%, #030106 14%, #030106 86%, #000 100%);
+}
+.asb-section-grid {
+  position: relative;
+  display: grid;
+  gap: 2.5rem;
+  align-items: center;
+  width: 100%;
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 6rem 1.5rem;
+}
+/* phones: scene above the copy */
+.asb-viewer { order: -1; min-width: 0; display: flex; flex-direction: column; gap: 0.75rem; }
+@media (min-width: 64rem) {
+  .asb-section-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.45fr); gap: 3.5rem; padding-block: 8rem; }
+  .asb-viewer { order: 0; }
+}
+
+/* scene frame: edges dissolve into the page instead of a hard box */
+.asb-frame { position: relative; width: 100%; aspect-ratio: 1 / 1.05; }
+@media (min-width: 40rem) { .asb-frame { aspect-ratio: 1.3 / 1; } }
+.asb-frame .asb-scene {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 9%, #000 91%, transparent), linear-gradient(to bottom, transparent, #000 8%, #000 90%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to right, transparent, #000 9%, #000 91%, transparent), linear-gradient(to bottom, transparent, #000 8%, #000 90%, transparent);
+  mask-composite: intersect;
+}
+.asb-frame .asb-scene:focus-visible { outline: none; }
+.asb-frame:has(.asb-scene:focus-visible) { outline: 1px solid rgb(255 63 174 / 0.7); outline-offset: 4px; border-radius: 2px; }
+
+.asb-hint {
+  display: flex; align-items: center; gap: 0.6rem; padding-inline: 9%;
+  font: 0.72rem/1.3 var(--font-mono); letter-spacing: 0.22em; text-transform: uppercase;
+  color: rgb(230 244 255 / 0.5);
+}
+.asb-hint-dot {
+  width: 0.45rem; height: 0.45rem; flex: none; border-radius: 50%;
+  background: var(--asb-red); box-shadow: 0 0 8px var(--asb-red), 0 0 16px var(--asb-pink);
+  animation: asb-breathe 2s ease-in-out infinite;
+}
+.asb-hint-touch { display: none; }
+@media (hover: none) { .asb-hint-pointer { display: none; } .asb-hint-touch { display: inline; } }
+@keyframes asb-breathe { 50% { transform: scale(1.35); opacity: 0.7; } }
+/* the poster is a still: nothing to click or wait for */
+.asb-viewer:has(.asb-scene[data-state='fallback']) .asb-hint { visibility: hidden; }
+
+/* ── copy ─────────────────────────────────────────────────────────────── */
+.asb-copy { max-width: 34rem; container-type: inline-size; }
+.asb-kicker {
+  display: flex; align-items: center; gap: 0.9rem;
+  font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.32em; text-transform: uppercase;
+  color: rgb(64 242 255 / 0.8);
+}
+.asb-kicker::before {
+  content: ""; width: 2.25rem; height: 1px; flex: none;
+  background: linear-gradient(90deg, transparent, var(--cyan));
+}
+
+.asb-title {
+  margin-top: 1rem;
+  font-family: var(--font-display);
+  font-weight: 800;
+  /* sized to the column: "Awkward Silence" is the widest line (~9.4em) */
+  font-size: clamp(2.1rem, 10.2cqi, 4.4rem);
+  line-height: 1.02;
+  letter-spacing: 0.01em;
+}
+.asb-tw { display: block; white-space: nowrap; }
+.asb-sp { display: inline-block; width: 0.3em; }
+.asb-l { display: inline-block; transform-origin: 50% 80%; }
+.asb-t-plain .asb-l { color: #f4f8ff; text-shadow: 0 0 22px rgb(64 242 255 / 0.25); }
+/* "Button": the button's red → hot pink, glowing */
+.asb-t-hot .asb-l {
+  background: linear-gradient(180deg, #ff8a9c 0%, var(--asb-red) 45%, var(--asb-pink) 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 0 14px rgb(255 42 74 / 0.55));
+  padding-bottom: 0.08em;
+}
+
+/* title reveal: armed (waiting for the first press) → on (letters pop in, the app's icon-pop) */
+.asb-section[data-title='armed'] .asb-l { opacity: 0.12; transform: translateY(0.18em) scale(0.6) rotate(-8deg); }
+.asb-section[data-title='on'] .asb-l {
+  animation: asb-letter-pop 0.7s var(--asb-pop) both;
+  animation-delay: calc(var(--i) * 32ms);
+}
+@keyframes asb-letter-pop {
+  from { opacity: 0.12; transform: translateY(0.18em) scale(0.6) rotate(-8deg); }
+  to { opacity: 1; transform: none; }
+}
+
+.asb-tagline {
+  margin-top: 1rem;
+  font-family: var(--font-display); font-weight: 600; font-size: 1.15rem; letter-spacing: 0.06em;
+  color: rgb(230 244 255 / 0.9);
+}
+.asb-lede { margin-top: 1.5rem; font-size: 1.02rem; line-height: 1.65; color: rgb(230 244 255 / 0.68); }
+
+.asb-steps { margin-top: 1.75rem; display: grid; gap: 0.7rem; list-style: none; padding: 0; }
+.asb-steps li { display: flex; align-items: baseline; gap: 0.9rem; color: rgb(230 244 255 / 0.85); }
+.asb-step-n {
+  flex: none; font: 0.8rem/1 var(--font-mono); letter-spacing: 0.1em;
+  color: var(--asb-pink); text-shadow: 0 0 10px rgb(255 63 174 / 0.6);
+}
+
+/* legend: the 7 categories as small neon chips (CSS-masked icons, like the app's CategoryIcon) */
+.asb-legend { margin-top: 2rem; display: flex; flex-wrap: wrap; gap: 0.5rem; list-style: none; padding: 0; }
+.asb-chip {
+  display: inline-flex; align-items: center; gap: 0.45rem;
+  padding: 0.38rem 0.7rem 0.38rem 0.5rem;
+  font: 0.7rem/1 var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase;
+  color: color-mix(in srgb, var(--c) 55%, #8b93a7);
+  border: 1px solid color-mix(in srgb, var(--c) 28%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--c) 6%, transparent);
+  transition: color 0.35s, border-color 0.35s, background-color 0.35s, box-shadow 0.35s;
+}
+.asb-chip-icon {
+  width: 1.1rem; height: 1.1rem; flex: none;
+  background: currentColor;
+  -webkit-mask: var(--icon) center / contain no-repeat;
+  mask: var(--icon) center / contain no-repeat;
+  transition: transform 0.35s var(--asb-pop), filter 0.35s;
+}
+.asb-chip[data-lit] {
+  color: var(--c);
+  border-color: color-mix(in srgb, var(--c) 80%, transparent);
+  background: color-mix(in srgb, var(--c) 14%, transparent);
+  box-shadow: 0 0 14px -2px color-mix(in srgb, var(--c) 70%, transparent), inset 0 0 10px -4px var(--c);
+}
+.asb-chip[data-lit] .asb-chip-icon { transform: scale(1.18) rotate(-6deg); filter: drop-shadow(0 0 4px var(--c)); }
+
+/* CTA: the button red, red focus ring */
+.asb-cta {
+  margin-top: 2.5rem;
+  display: inline-flex; align-items: center; gap: 0.7rem;
+  max-width: 100%;
+  padding: 0.95rem clamp(0.95rem, 4cqi, 1.35rem);
+  /* scales with the copy column so the domain stays on one line on phones */
+  font: 700 clamp(0.6rem, 3.15cqi, 0.78rem)/1 var(--font-display); letter-spacing: min(0.16em, 0.3cqi);
+  text-transform: uppercase; white-space: nowrap;
+  color: #fff; text-decoration: none;
+  background: linear-gradient(180deg, #ff4d66 0%, var(--asb-red) 55%, #d81d48 100%);
+  border-radius: 999px;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.25), 0 0 0 1px rgb(255 63 174 / 0.4), 0 0 26px -4px rgb(255 42 74 / 0.75);
+  transition: transform 0.2s var(--asb-pop), box-shadow 0.3s, filter 0.3s;
+}
+.asb-cta:hover { filter: brightness(1.08); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3), 0 0 0 1px rgb(255 63 174 / 0.7), 0 0 36px -2px rgb(255 42 74 / 0.95); }
+.asb-cta:active { transform: translateY(1px) scale(0.98); }
+.asb-cta:focus-visible { outline: 2px solid var(--asb-red); outline-offset: 4px; }
+.asb-cta-arrow { width: 0.75rem; height: 0.75rem; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; transition: transform 0.3s var(--asb-pop); }
+.asb-cta:hover .asb-cta-arrow { transform: translate(2px, -2px); }
+
+/* ── creators & contributors ("The fellowship") ─────────────────────────── */
+.asb-creators {
+  grid-column: 1 / -1;
+  margin-top: 1.5rem; padding-top: 3rem;
+  border-top: 1px solid transparent;
+  border-image: linear-gradient(to right, transparent, rgb(255 63 174 / 0.45), rgb(64 242 255 / 0.45), transparent) 1;
+  text-align: center;
+}
+.asb-creators-kicker { justify-content: center; }
+.asb-creators-kicker::after {
+  content: ""; width: 2.25rem; height: 1px; flex: none;
+  background: linear-gradient(90deg, var(--cyan), transparent);
+}
+.asb-creators-title {
+  margin-top: 0.75rem;
+  font: 800 clamp(1.3rem, 2.6vw, 1.75rem)/1.1 var(--font-display);
+  letter-spacing: 0.06em; color: #f4f8ff; text-shadow: 0 0 22px rgb(64 242 255 / 0.25);
+}
+.asb-creators-list {
+  margin-top: 2rem; padding: 0; list-style: none;
+  display: grid; gap: 0.85rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 17rem));
+  justify-content: center;
+}
+.asb-creator {
+  display: flex; align-items: center; gap: 0.85rem; height: 100%;
+  padding: 0.8rem 1rem; text-align: left; text-decoration: none; color: inherit;
+  background: linear-gradient(180deg, rgb(255 63 174 / 0.06), rgb(255 63 174 / 0.015));
+  border: 1px solid rgb(255 63 174 / 0.22); border-radius: 3px;
+  transition: border-color 0.25s, background 0.25s, box-shadow 0.3s, transform 0.3s var(--asb-pop);
+}
+a.asb-creator:hover {
+  border-color: rgb(255 63 174 / 0.7);
+  background: linear-gradient(180deg, rgb(255 63 174 / 0.12), rgb(255 63 174 / 0.03));
+  box-shadow: 0 0 24px -8px rgb(255 63 174 / 0.75);
+  transform: translateY(-2px);
+}
+a.asb-creator:focus-visible { outline: 2px solid var(--asb-red); outline-offset: 3px; }
+.asb-avatar {
+  position: relative; flex: none; width: 2.75rem; height: 2.75rem; border-radius: 50%; overflow: hidden;
+  background: radial-gradient(circle at 50% 35%, #2a0f22, #07030a);
+  box-shadow: 0 0 0 1px rgb(255 63 174 / 0.7), 0 0 0 3px #030106, 0 0 0 4px rgb(64 242 255 / 0.35);
+}
+.asb-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.asb-avatar-initials {
+  display: grid; place-items: center; width: 100%; height: 100%;
+  font: 700 0.85rem/1 var(--font-display); letter-spacing: 0.04em; color: var(--asb-pink);
+}
+.asb-creator-text { display: grid; gap: 0.2rem; min-width: 0; flex: 1; }
+.asb-creator-name {
+  font: 600 0.9rem/1.2 var(--font-display); letter-spacing: 0.05em; color: #f4f8ff;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.asb-creator-role { font: 0.72rem/1.3 var(--font-mono); letter-spacing: 0.08em; color: rgb(230 244 255 / 0.55); }
+.asb-creator-link {
+  flex: none; width: 0.85rem; height: 0.85rem; fill: none; stroke: rgb(255 63 174 / 0.7); stroke-width: 1.5;
+  stroke-linecap: round; stroke-linejoin: round; transition: stroke 0.25s, transform 0.3s;
+}
+a.asb-creator:hover .asb-creator-link { stroke: var(--asb-pink); transform: translate(1px, -1px); }
+
+/* phones: tighter mono lines so the hint and kicker stay on one line */
+@media (max-width: 30rem) {
+  .asb-hint { padding-inline: 6%; letter-spacing: 0.12em; }
+  .asb-kicker { font-size: 0.7rem; letter-spacing: 0.2em; }
+  .asb-kicker::before, .asb-creators-kicker::after { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .asb-section[data-title] .asb-l { animation: none; opacity: 1; transform: none; }
+  .asb-hint-dot { animation: none; }
+  .asb-chip, .asb-chip-icon, .asb-cta, .asb-cta-arrow { transition: none; }
+  a.asb-creator, .asb-creator-link { transition: none; }
+  a.asb-creator:hover { transform: none; }
+}

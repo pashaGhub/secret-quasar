@@ -330,6 +330,8 @@ His free head-wandering is reduced so the gestures carry the "thinking".
   (only http(s) / mailto / `/path` links; unsafe ones are dropped). Empty link → plain card; empty avatar → initials.
   Edited in the lab (*Creators editor*, below the scene): edit, reorder, add, remove, live preview, **Save to repo** →
   `POST /lab/story-mode/creators` (dev only: 404 in production, same-origin only) writes the JSON. Commit it to publish.
+  Since 2026-11-08 the editor is the shared `components/creators/CreatorsEditor.tsx` (also used by Awkward Silence Button);
+  `StoryModeCreatorsEditor.tsx` is a thin wrapper and the route uses `lib/creators/saveRoute.ts` — same behaviour.
 - Lab fix: the copy column collapsed in the lab's flex row since the title became a size container; it now has an
   explicit flex size.
 
